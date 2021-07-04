@@ -1,16 +1,16 @@
 if VERSION > v"0.7-"
-    push!(LOAD_PATH, Base.NamedEnv("v0.7"))
+    push!(LOAD_PATH, Base.NamedEnv("SegmentTrees.jl"))
     using InteractiveUtils
     using Random
     using Profile
 end
 versioninfo()
 
-using IntervalTrees
+using SegmentTrees
 using CodecZlib
 
 function readgff3(input::IO, chrom::String)
-    intervals = Interval{Int}[]
+    segments = Segment{Int}[]
     for line in eachline(input)
         if startswith(line, "#")
             continue
@@ -19,11 +19,11 @@ function readgff3(input::IO, chrom::String)
         if values[1] == chrom
             chromstart = parse(Int, values[4])
             chromend = parse(Int, values[5])
-            push!(intervals, Interval(chromstart, chromend))
+            push!(segments, Segment(chromstart, chromend))
         end
     end
-    sort!(intervals)
-    return IntervalTree{Int,Interval{Int}}(intervals)
+    sort!(segments)
+    return SegmentTree{Int,Segment{Int}}(segments)
 end
 
 function readgff3(filepath::String, chrom::String)
@@ -58,11 +58,11 @@ function random_query(tree, queries)
     return n
 end
 srand(1234)
-intervals = shuffle!(collect(tree))
+segments = shuffle!(collect(tree))
 for _ in 1:5
-    @time random_query(tree, intervals)
+    @time random_query(tree, segments)
 end
 if "-p" in ARGS
-    @profile random_query(tree, intervals)
+    @profile random_query(tree, segments)
     Profile.print()
 end
