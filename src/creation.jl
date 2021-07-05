@@ -1,8 +1,7 @@
 
 """
-Types deriving from `AbstractSegment{T}` must have a `first` and `last`
-function each returning a value of type `T`, and `first(i) <= last(i)`
-must always be true.
+Types deriving from `AbstractSegment{T}` must have a `first` and `last` function each returning a value of type `T`, 
+and `first(i) <= last(i)` must always be true.
 """
 abstract type AbstractSegment{T} end
 
@@ -17,6 +16,7 @@ function Base.isless(u::AbstractSegment, v::AbstractSegment)
     return basic_isless(u, v)
 end
 
+
 """
 A basic Segment.
 """
@@ -24,25 +24,45 @@ struct Segment{T} <: AbstractSegment{T}
     first::T
     last::T
 end
+
 Base.convert(::Type{Segment{T}}, range::AbstractRange{T}) where T =
     Segment(first(range), last(range))
 Segment(range::AbstractRange{T}) where T = convert(Segment{T}, range)
 
+
+abstract type AbstractSegmentTree{T} end
+
+"""
+A basic Segment tree
+"""
+struct SegmentTree{T} <: AbstractSegmentTree{T}
+    dataarray::Vector{Int}
+    segments::Vector{Segment{T}}
+end
+
+
+
+
+
+
+
+
+
 """
 An Segment with some associated data.
 """
-struct SegmentValue{K, V} <: AbstractSegment{K}
+struct SegmentValue{K,V} <: AbstractSegment{K}
     first::K
     last::K
     value::V
 end
 
-SegmentValue(range::AbstractRange{K}, value::V) where {K, V} =
+SegmentValue(range::AbstractRange{K}, value::V) where {K,V} =
     SegmentValue(first(range), last(range), value)
 
-valtype(::Type{SegmentValue{K,V}}) where {K, V} = V
+valtype(::Type{SegmentValue{K,V}}) where {K,V} = V
 
-value(i::SegmentValue{K, V}) where {K, V} = i.value
+value(i::SegmentValue{K,V}) where {K,V} = i.value
 
 Base.print(io::IO, x::Segment) = print(io, "\n($(first(x)),$(last(x)))")
 function Base.show(io::IO, x::Segment)
@@ -62,34 +82,34 @@ end
 #        data. It must have `first`, `last`, and `isless` methods.
 #   B : Integer giving the B-tree order.
 
-abstract type Node{K, V, B} end
+abstract type Node{K,V,B} end
 
 
-mutable struct InternalNode{K, V, B} <: Node{K, V, B}
+mutable struct InternalNode{K,V,B} <: Node{K,V,B}
     # Internal nodes are keyed by the minimum Segment in the right subtree.  We
     # need internal node keys to be Segments themselves, since ordering by
     # start value alone only works if start values are unique. We don't
     # force that restriction, so we must break ties in order to split nodes that
     # are full of Segments with the same start value.
-    keys::Slice{Segment{K}, B}
+    keys::Slice{Segment{K},B}
 
     # Maximum end ofd this node
     maxend::K
 
     # Maximum child subtree end-points
-    maxends::Slice{K, B}
+    maxends::Slice{K,B}
 
-    children::Slice{Node{K, V, B}, B}
+    children::Slice{Node{K,V,B},B}
 
-    parent::Union{Nothing, InternalNode{K, V, B}}
+    parent::Union{Nothing,InternalNode{K,V,B}}
 
     # Sibling/cousin pointers.
-    left::Union{Nothing, InternalNode{K, V, B}}
-    right::Union{Nothing, InternalNode{K, V, B}}
+    left::Union{Nothing,InternalNode{K,V,B}}
+    right::Union{Nothing,InternalNode{K,V,B}}
 
     function InternalNode{K,V,B}() where {K,V,B}
         return new{K,V,B}(
-            Slice{Segment{K}, B}(), zero(K), Slice{K, B}(), Slice{Node{K, V, B}, B}(),
+            Slice{Segment{K},B}(), zero(K), Slice{K,B}(), Slice{Node{K,V,B},B}(),
             nothing,
             nothing,
             nothing)
@@ -102,7 +122,7 @@ function minstart(t::InternalNode)
 end
 
 
-mutable struct LeafNode{K, V, B} <: Node{K, V, B}
+mutable struct LeafNode{K,V,B} <: Node{K,V,B}
     entries::Vector{V}
     keys::Vector{Segment{K}}
     count::UInt32 # number of stored entries
@@ -110,11 +130,11 @@ mutable struct LeafNode{K, V, B} <: Node{K, V, B}
     # maximum Segment end-point in this leaf node.
     maxend::K
 
-    parent::Union{Nothing, InternalNode{K, V, B}}
+    parent::Union{Nothing,InternalNode{K,V,B}}
 
     # Sibling/cousin pointers.
-    left::Union{Nothing, LeafNode{K, V, B}}
-    right::Union{Nothing, LeafNode{K, V, B}}
+    left::Union{Nothing,LeafNode{K,V,B}}
+    right::Union{Nothing,LeafNode{K,V,B}}
 
     function LeafNode{K,V,B}() where {K,V,B}
         return new{K,V,B}(
@@ -132,34 +152,34 @@ function minstart(t::LeafNode)
 end
 
 
-function Base.resize!(leaf::LeafNode{K, V, B}, n) where {K, V, B}
+function Base.resize!(leaf::LeafNode{K,V,B}, n) where {K,V,B}
     @assert 0 <= n <= B
     leaf.count = n
 end
 
 
-function Base.splice!(leaf::LeafNode{K, V, B}, i::Integer) where {K, V, B}
+function Base.splice!(leaf::LeafNode{K,V,B}, i::Integer) where {K,V,B}
     slice_splice!(leaf.keys, leaf.count, i)
     x, leaf.count = slice_splice!(leaf.entries, leaf.count, i)
     return x
 end
 
 
-function Base.insert!(leaf::LeafNode{K, V, B}, i::Integer, value::V) where {K, V, B}
+function Base.insert!(leaf::LeafNode{K,V,B}, i::Integer, value::V) where {K,V,B}
     slice_insert!(leaf.keys, leaf.count, i, Segment{K}(first(value), last(value)))
     slice_insert!(leaf.entries, leaf.count, i, value)
     leaf.count += 1
 end
 
 
-function Base.push!(leaf::LeafNode{K, V, B}, value::V) where {K, V, B}
+function Base.push!(leaf::LeafNode{K,V,B}, value::V) where {K,V,B}
     leaf.count += 1
     leaf.entries[leaf.count] = value
     leaf.keys[leaf.count] = Segment{K}(first(value), last(value))
 end
 
 
-function Base.pop!(leaf::LeafNode{K, V, B}) where {K, V, B}
+function Base.pop!(leaf::LeafNode{K,V,B}) where {K,V,B}
     x = leaf.entries[leaf.count]
     leaf.count -= 1
     return x
@@ -170,12 +190,12 @@ function Base.iterate(leaf::LeafNode, i::Int=1)
 end
 
 
-mutable struct SegmentBTree{K, V, B}
-    root::Node{K, V, B}
+mutable struct SegmentBTree{K,V,B}
+    root::Node{K,V,B}
     n::Int # Number of entries
 
     function SegmentBTree{K,V,B}() where {K,V,B}
-        return new{K,V,B}(LeafNode{K, V, B}(), 0)
+        return new{K,V,B}(LeafNode{K,V,B}(), 0)
     end
 
     # Construct an Segment tree from a sorted array of Segments.
@@ -198,11 +218,11 @@ mutable struct SegmentBTree{K, V, B}
         n = length(entries)
 
         if n == 0
-            return new{K,V,B}(LeafNode{K, V, B}(), 0)
+            return new{K,V,B}(LeafNode{K,V,B}(), 0)
         end
 
         numleaves = cld(n, B - 2)
-        leaves = [LeafNode{K, V, B}() for _ in 1:numleaves]
+        leaves = [LeafNode{K,V,B}() for _ in 1:numleaves]
 
         maxends = Vector{K}(undef, numleaves)
         minkeys = Vector{Segment{K}}(undef, numleaves)
@@ -224,14 +244,14 @@ mutable struct SegmentBTree{K, V, B}
         children = leaves
         while length(children) > 1
             # sibling pointers
-            for i in 1:length(children)-1
-                children[i].right = children[i+1]
-                children[i+1].left = children[i]
+            for i in 1:length(children) - 1
+                children[i].right = children[i + 1]
+                children[i + 1].left = children[i]
             end
 
             # make parents
             numparents = cld(length(children), B - 2)
-            parents = [InternalNode{K, V, B}() for _ in 1:numparents]
+            parents = [InternalNode{K,V,B}() for _ in 1:numparents]
 
             # divy up children among parents
             children_per_parent = cld(length(children), numparents)
@@ -263,7 +283,7 @@ end
 
 
 # Default B-tree order
-const SegmentTree{K, V} = SegmentBTree{K, V, 64}
+const SegmentTree{K,V} = SegmentBTree{K,V,64}
 
 # Show
 
@@ -277,12 +297,12 @@ function Base.show(io::IO, it::SegmentTree)
         end
         print("\n\u22EE") # Vertical ellipsis
         for (i, x) in enumerate(it)
-            i > (n-3) && print(x)
+            i > (n - 3) && print(x)
         end
     else
         for x in it
             print(x)
-        end
+end
     end
 end
 

@@ -1,9 +1,8 @@
 
 
 """
-Types deriving from `AbstractSegment{T}` must have a `range[1]` and `range[2]`
-function each returning a value of type `T`, and `first(i) <= last(i)`
-must always be true.
+Types deriving from `AbstractSegment{T}` must have a `range[1]` and `range[2]` function each returning a value of type
+`T`, and `first(i) <= last(i)` must always be true.
 """
 abstract type AbstractSegment{T} end
 
@@ -36,7 +35,7 @@ mutable struct Segment{T} <: AbstractSegment{T}
             key = ceil((range[1] + range[2]) / 2)
         end
 
-        return new((s, t) , aux, Segment((s, key), nothing), Segment((key, t), nothing))
+        return new((s, t), aux, Segment((s, key), nothing), Segment((key, t), nothing))
     end 
     
 end
