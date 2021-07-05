@@ -14,10 +14,12 @@ export
 using Base: notnothing
 
 include("slice.jl")
-include("types.jl")
+include("creation.jl")
+include("iteration.jl")
+include("insertion.jl")
 include("deletion.jl")
 include("merging.jl")
-include("searching.jl")
+include("search.jl")
 include("intersection.jl")
 include("map.jl")
 
